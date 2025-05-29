@@ -124,18 +124,6 @@ export async function POST(request: Request) {
             city,
             distinctId: id,
           });
-          const sessionData = `New Visitor on ${hostname}:
-          browser:  ${browser}        
-          os:       ${os}
-          device:   ${device}
-          country:  ${country}
-          region:   ${region}
-          city:     ${city}
-          ip:       ${ip}
-          userAgent: ${userAgent}
-
-          `;
-          alertOnTelegram(encodeURIComponent(sessionData));
         } catch (e: any) {
           if (!e.message.toLowerCase().includes('unique constraint')) {
             return serverError(e);
@@ -195,7 +183,18 @@ export async function POST(request: Request) {
           referrerDomain = referrerUrl.hostname.replace(/^www\./, '');
         }
       }
+      const sessionData = `New Visitor on ${hostname || urlDomain}:
+ip:       ${ip}
+browser:  ${browser}        
+os:       ${os} 
+device:   ${device}
+country:  ${country}
+region:   ${region}
+city:     ${city}
+userAgent: ${userAgent}
 
+          `;
+      alertOnTelegram(encodeURIComponent(sessionData));
       await saveEvent({
         websiteId,
         sessionId,

@@ -3,15 +3,16 @@ import { isbot } from 'isbot';
 import { startOfHour, startOfMonth } from 'date-fns';
 import clickhouse from '@/lib/clickhouse';
 import { parseRequest } from '@/lib/request';
-import { badRequest, json, forbidden, serverError } from '@/lib/response';
+import { badRequest, forbidden, json, serverError } from '@/lib/response';
 import { fetchSession, fetchWebsite } from '@/lib/load';
 import { getClientInfo, hasBlockedIp } from '@/lib/detect';
 import { createToken, parseToken } from '@/lib/jwt';
-import { secret, uuid, hash } from '@/lib/crypto';
+import { hash, secret, uuid } from '@/lib/crypto';
 import { COLLECTION_TYPE } from '@/lib/constants';
 import { anyObjectParam, urlOrPathParam } from '@/lib/schema';
 import { safeDecodeURI, safeDecodeURIComponent } from '@/lib/url';
 import { createSession, saveEvent, saveSessionData } from '@/queries';
+import { alertOnTelegram } from '@/components/alertOnTelegram';
 
 const schema = z.object({
   type: z.enum(['event', 'identify']),
@@ -182,7 +183,18 @@ export async function POST(request: Request) {
           referrerDomain = referrerUrl.hostname.replace(/^www\./, '');
         }
       }
+      const sessionData = `New Visitor on ${hostname || urlDomain}:
+ip:       ${ip}
+browser:  ${browser}        
+os:       ${os} 
+device:   ${device}
+country:  ${country}
+region:   ${region}
+city:     ${city}
+userAgent: ${userAgent}
 
+          `;
+      alertOnTelegram(encodeURIComponent(sessionData));
       await saveEvent({
         websiteId,
         sessionId,

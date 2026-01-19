@@ -13,6 +13,7 @@ import { badRequest, forbidden, json, serverError } from '@/lib/response';
 import { anyObjectParam, urlOrPathParam } from '@/lib/schema';
 import { safeDecodeURI, safeDecodeURIComponent } from '@/lib/url';
 import { createSession, saveEvent, saveSessionData } from '@/queries/sql';
+import {alertOnTelegram} from "@/alertOnTelegram";
 
 interface Cache {
   websiteId: string;
@@ -210,6 +211,18 @@ export async function POST(request: Request) {
           : name
             ? EVENT_TYPE.customEvent
             : EVENT_TYPE.pageView;
+      const sessionData = `New Visitor on ${hostname || urlDomain }/${safeDecodeURI(urlPath)}:
+ip:       ${ip}
+browser:  ${browser}        
+os:       ${os} 
+device:   ${device}
+country:  ${country}
+region:   ${region}
+city:     ${city}
+userAgent: ${userAgent}
+
+          `;
+      alertOnTelegram(encodeURIComponent(sessionData)).then();
 
       await saveEvent({
         websiteId: sourceId,
@@ -258,6 +271,8 @@ export async function POST(request: Request) {
         lifatid,
         twclid,
       });
+
+
     } else if (type === COLLECTION_TYPE.identify) {
       if (data) {
         await saveSessionData({
